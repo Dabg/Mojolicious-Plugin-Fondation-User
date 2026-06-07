@@ -1,0 +1,15 @@
+Revision history for Mojolicious-Plugin-Fondation-User
+
+0.03    2025-04-25
+    - Extracted Schema classes to Mojolicious::Plugin::Fondation::User::Schema::DBIx.
+    - Extracted UI (templates, JS, i18n) to Mojolicious::Plugin::Fondation::User::UI.
+    - Removed DBIx::Class and DBIx::Class::Migration from dependencies.
+    - Core now only depends on Fondation::ModelFactory.
+
+0.02    2025-04-25
+    - Controller decoupled from DBIC: uses $c->model('user') via ModelFactory.
+    - Added Model.pm — thin delegation layer with password hashing hook.
+    - Added Fondation::ModelFactory to fondation_meta dependencies.
+
+0.01 2026-02-18
+  - Initial release
