@@ -48,10 +48,10 @@ Mojolicious::Plugin::Fondation::User - User management plugin for Fondation
       'Fondation' => {
           dependencies => [
               { 'Fondation::Model::DBIx::Async' => {
-                  backends => { main => {
+                  backends => [ main => {
                       dsn          => 'dbi:SQLite:dbname=data/app.db',
                       schema_class => 'MySchema',
-                  }},
+                  }],
               }},
               'Fondation::User',
           ],

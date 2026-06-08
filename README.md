@@ -13,10 +13,10 @@ version 0.01
         'Fondation' => {
             dependencies => [
                 { 'Fondation::Model::DBIx::Async' => {
-                    backends => { main => {
+                    backends => [ main => {
                         dsn          => 'dbi:SQLite:dbname=data/app.db',
                         schema_class => 'MySchema',
-                    }},
+                    }],
                 }},
                 'Fondation::User',
             ],

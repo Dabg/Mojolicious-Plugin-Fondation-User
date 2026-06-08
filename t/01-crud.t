@@ -20,13 +20,13 @@ $app->config->{'Fondation'} = {
     dependencies => [
         {
             'Fondation::Model::DBIx::Async' => {
-                backends => {
+                backends => [
                     main => {
                         dsn          => "dbi:SQLite:dbname=$tmpdir/test.db",
                         schema_class => 'TestUserSchema',
                         workers      => 1,
                     },
-                },
+                ],
                 models => {
                     user => { source => 'users', backend => 'main' },
                 },
