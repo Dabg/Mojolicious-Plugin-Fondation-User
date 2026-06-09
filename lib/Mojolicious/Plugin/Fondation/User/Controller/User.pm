@@ -122,6 +122,15 @@ sub _render_error ($self, $err) {
 sub _to_data ($row) {
     my $data = { $row->get_columns };
     delete $data->{password};
+
+    # Serialize DateTime objects to ISO 8601 strings
+    for my $key (keys %$data) {
+        my $val = $data->{$key};
+        if (ref $val && eval { $val->isa('DateTime') }) {
+            $data->{$key} = $val->iso8601;
+        }
+    }
+
     return $data;
 }
 

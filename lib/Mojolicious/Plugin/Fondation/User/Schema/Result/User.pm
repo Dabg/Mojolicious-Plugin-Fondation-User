@@ -29,39 +29,55 @@ __PACKAGE__->table('users');
 
 __PACKAGE__->add_columns(
     id => { data_type => 'integer', is_auto_increment => 1, is_nullable => 0 },
-    # → readOnly + description auto via règles globales
 
     username => {
         data_type   => 'varchar',
         size        => 100,
         is_nullable => 0,
         extra       => {
-            openapi => {   # ← optionnel, ici on surcharge juste un peu
-                minLength   => 4,                    # au lieu de 3 global
+            openapi => {
+                minLength   => 4,
                 pattern     => '^[a-zA-Z0-9_-]{4,}$',
             }
         },
     },
 
-    email => { data_type => 'varchar', size => 255, is_nullable => 0 },
-    # → format: email + example auto
+    email => {
+        data_type   => 'varchar',
+        size        => 255,
+        is_nullable => 0,
+        extra       => { openapi => { format => 'email' } },
+    },
 
-    password => { data_type => 'varchar', size => 255, is_nullable => 0 },
-    # → writeOnly + minLength + format auto
+    password => {
+        data_type   => 'varchar',
+        size        => 255,
+        is_nullable => 0,
+        extra       => {
+            openapi => {
+                writeOnly => 1,
+                format    => 'password',
+                minLength => 8,
+                create    => { required => 1 },
+                update    => { required => 0 },
+            },
+        },
+    },
 
-    created_at => { data_type => 'datetime', is_nullable => 0, set_on_create => 1, set_on_update => 1  },
-    # → readOnly auto
+    created_at => { data_type => 'datetime', is_nullable => 0, set_on_create => 1, set_on_update => 1 },
 
     updated_at => { data_type => 'datetime', is_nullable => 0, set_on_create => 1, set_on_update => 1 },
-    # idem
 
     active => {
         data_type     => 'integer',
         default_value => 1,
+        is_nullable   => 0,
         extra         => {
             openapi => {
-                required => 0,   # ← explicitement pas required en API
-            }
+                enum   => [0, 1],
+                create => { required => 0 },
+                update => { required => 0 },
+            },
         },
     },
 );
