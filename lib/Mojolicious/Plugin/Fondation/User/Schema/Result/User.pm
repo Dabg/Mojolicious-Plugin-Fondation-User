@@ -20,6 +20,7 @@ my $PASSPHRASE = Crypt::Passphrase->new(
     },
 );
 
+# ── Internal ──────────────────────────────────────────────────────────
 sub _hash_password {
     my ($password) = @_;
     return $PASSPHRASE->hash_password($password);
@@ -89,8 +90,8 @@ __PACKAGE__->resultset_class('Mojolicious::Plugin::Fondation::User::Schema::Resu
 # Hash password automatically on create
 sub insert {
     my $self = shift;
-    if ($self->password && $self->is_column_changed('password')) {
-        $self->password($self->_hash_password($self->password));
+    if ($self->password) {
+        $self->password(_hash_password($self->password));
     }
     $self->next::method(@_);
 }
@@ -104,5 +105,27 @@ sub update {
     }
     $self->next::method($upd);
 }
+
+
+# ── Verify a plaintext password against the stored hash ───────────────
+
+sub check_password {
+    my ($self, $password) = @_;
+
+    my $hash = $self->password;
+    return undef unless $hash;
+
+    my $pp = Crypt::Passphrase->new(
+        encoder => {
+            module  => 'Argon2',
+            time    => 3,
+            memory  => 64 * 1024,
+            threads => 4,
+        },
+    );
+
+    return $pp->verify_password($password, $hash);
+}
+
 
 1;
