@@ -16,7 +16,7 @@ sub list ($self) {
 
 # Create a user (POST /api/User)
 sub create ($self) {
-    $self = $self->valid_input or return;
+    $self = $self->openapi->valid_input or return;
     $self->render_later;
     my $json = $self->req->json;
     $self->model('user')->create($json)->on_done(sub {
@@ -30,12 +30,16 @@ sub create ($self) {
             title => $self->l('User created'),
             body  => sprintf($self->l("User '%s' has been created."), $data->{username} // ''),
         });
-    })->on_fail(sub { $self->_render_error(shift) })->retain;
+    })->on_fail(sub {
+        my $err = shift;
+        $self->app->log->error('[User::create] on_fail: ' . $self->dumper($err));
+        $self->_render_error($err);
+    })->retain;
 }
 
 # Read a user by ID (GET /api/User/:id)
 sub read ($self) {
-    $self = $self->valid_input or return;
+    $self = $self->openapi->valid_input or return;
     $self->render_later;
     my $id = $self->param('id');
     $self->model('user')->find($id)->on_done(sub {
@@ -52,14 +56,15 @@ sub read ($self) {
 
 # Update a user (PUT /api/User/:id)
 sub update ($self) {
-    $self = $self->valid_input or return;
     $self->render_later;
-    my $id        = $self->param('id');
-    my $json      = $self->req->json;
-    my $group_ids = delete $json->{groups};
+    my $id   = $self->param('id');
+    my $json = $self->req->json;
 
-    # Empty password means "don't change password"
+    # Must be stripped BEFORE valid_input to pass minLength validation
     delete $json->{password} if defined $json->{password} && $json->{password} !~ /\S/;
+
+    $self = $self->openapi->valid_input or return;
+    my $group_ids = delete $json->{groups};
 
     $self->model('user')->find($id)->on_done(sub {
         my $user = shift;
@@ -88,7 +93,7 @@ sub update ($self) {
 
 # Delete a user (DELETE /api/User/:id)
 sub delete ($self) {
-    $self = $self->valid_input or return;
+    $self = $self->openapi->valid_input or return;
     $self->render_later;
     my $id = $self->param('id');
     $self->model('user')->find($id)->on_done(sub {
@@ -115,6 +120,7 @@ sub delete ($self) {
 # ────────────────────────────────────────────────────────────────────────────
 
 sub _render_error ($self, $err) {
+    $self->app->log->error('[User::Controller] _render_error: ' . $self->dumper($err));
     $self->render(status => 500, openapi =>
         { errors => [{ message => "$err", path => '/' }] });
 }

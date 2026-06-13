@@ -10,20 +10,25 @@ use Crypt::Passphrase;
 
 __PACKAGE__->load_components(qw/TimeStamp Core/);
 
-# Password hashing — runs in the worker process before INSERT/UPDATE
-my $PASSPHRASE = Crypt::Passphrase->new(
-    encoder => {
-        module  => 'Argon2',
-        time    => 3,
-        memory  => 64 * 1024,
-        threads => 4,
-    },
-);
-
 # ── Internal ──────────────────────────────────────────────────────────
+
+# Lazy-initialized passphrase instance (per-process singleton).
+my $_PASSPHRASE;
+
+sub _passphrase {
+    return $_PASSPHRASE //= Crypt::Passphrase->new(
+        encoder => {
+            module  => 'Argon2',
+            time    => 3,
+            memory  => 64 * 1024,
+            threads => 4,
+        },
+    );
+}
+
 sub _hash_password {
     my ($password) = @_;
-    return $PASSPHRASE->hash_password($password);
+    return _passphrase()->hash_password($password);
 }
 
 __PACKAGE__->table('users');
@@ -90,7 +95,7 @@ __PACKAGE__->resultset_class('Mojolicious::Plugin::Fondation::User::Schema::Resu
 # Hash password automatically on create
 sub insert {
     my $self = shift;
-    if ($self->password) {
+    if (defined $self->password) {
         $self->password(_hash_password($self->password));
     }
     $self->next::method(@_);
@@ -100,8 +105,8 @@ sub insert {
 sub update {
     my $self = shift;
     my $upd = {@_};
-    if (exists $upd->{password} && $upd->{password}) {
-        $upd->{password} = $self->_hash_password($upd->{password});
+    if (exists $upd->{password} && defined $upd->{password}) {
+        $upd->{password} = _hash_password($upd->{password});
     }
     $self->next::method($upd);
 }
