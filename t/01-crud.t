@@ -47,8 +47,6 @@ require Mojolicious::Plugin::Fondation::User::Schema::Result::User;
 TestUserSchema->register_source('users',
     Mojolicious::Plugin::Fondation::User::Schema::Result::User
         ->result_source_instance);
-TestUserSchema->register_class('User',
-    'Mojolicious::Plugin::Fondation::User::Schema::Result::User');
 
 # Deploy the users table
 my $c = $app->build_controller;

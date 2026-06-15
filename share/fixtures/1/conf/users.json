@@ -10,7 +10,7 @@
    },
    "sets" : [
       {
-         "class" : "User",
+         "class" : "users",
          "quantity" : "all"
       }
    ]
