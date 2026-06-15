@@ -37,10 +37,6 @@ __END__
 
 =encoding UTF-8
 
-=head1 NAME
-
-Mojolicious::Plugin::Fondation::User - User management plugin for Fondation
-
 =head1 SYNOPSIS
 
   # myapp.conf
