@@ -71,10 +71,6 @@ The `password` field is never returned in API responses.
 Translations for API notifications are shipped in `share/translations/`.
 English and French are included.
 
-# NAME
-
-Mojolicious::Plugin::Fondation::User - User management plugin for Fondation
-
 # SEE ALSO
 
 - [Mojolicious::Plugin::Fondation::Model::DBIx::Async](https://metacpan.org/pod/Mojolicious%3A%3APlugin%3A%3AFondation%3A%3AModel%3A%3ADBIx%3A%3AAsync) — database backend

@@ -92,6 +92,12 @@ __PACKAGE__->set_primary_key('id');
 __PACKAGE__->add_unique_constraint([qw(username email)]);
 __PACKAGE__->resultset_class('Mojolicious::Plugin::Fondation::User::Schema::ResultSet::User');
 
+__PACKAGE__->has_many(
+    'user_group',
+    'Mojolicious::Plugin::Fondation::Group::Schema::Result::UserGroup',
+    'user_id',
+);
+
 # Hash password automatically on create
 sub insert {
     my $self = shift;
