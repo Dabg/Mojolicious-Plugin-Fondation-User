@@ -4,12 +4,33 @@ package Mojolicious::Plugin::Fondation::User::Controller::User;
 
 use Mojo::Base 'Mojolicious::Plugin::Fondation::Controller::Base', -signatures;
 
+# ────────────────────────────────────────────────────────────────────────────
+# Helpers
+# ────────────────────────────────────────────────────────────────────────────
+
+# Check if Group plugin is loaded and ?with=groups was requested
+sub _want_groups ($self) {
+    return 0 unless $self->param('with') && $self->param('with') eq 'groups';
+    return 0 unless $self->has_helper('fondation');
+    return exists $self->fondation->registry->{'Mojolicious::Plugin::Fondation::Group'};
+}
+
+# ────────────────────────────────────────────────────────────────────────────
+# CRUD
+# ────────────────────────────────────────────────────────────────────────────
+
 # List all users (GET /api/User)
 sub list ($self) {
     $self->render_later;
-    $self->model('user')->search({})->all->on_done(sub {
+
+    my $rs = $self->_want_groups
+        ? $self->model('user')->with('groups')
+        : $self->model('user');
+
+    my $schema = $self->schema;
+    $rs->all->on_done(sub {
         my $users = shift;
-        my @data  = map { _to_data($_) } @$users;
+        my @data  = map { _to_data($_, $schema) } @$users;
         $self->render(openapi => \@data);
     })->on_fail(sub { $self->_render_error(shift) })->retain;
 }
@@ -42,10 +63,16 @@ sub read ($self) {
     $self = $self->openapi->valid_input or return;
     $self->render_later;
     my $id = $self->param('id');
-    $self->model('user')->find($id)->on_done(sub {
+
+    my $rs = $self->_want_groups
+        ? $self->model('user')->with('groups')
+        : $self->model('user');
+
+    my $schema = $self->schema;
+    $rs->find($id)->on_done(sub {
         my $user = shift;
         if ($user) {
-            $self->render(openapi => _to_data($user));
+            $self->render(openapi => _to_data($user, $schema));
         }
         else {
             $self->render(status => 404, openapi =>
@@ -77,10 +104,6 @@ sub update ($self) {
             my $updated = shift;
             my $data    = _to_data($updated);
             $self->render(openapi => $data);
-
-            # TODO: sync user-group associations once a groups table exists
-            # $self->_sync_user_groups($id, $group_ids)
-            #     if $group_ids;
 
             $self->notify_user({
                 type  => 'info',
@@ -125,7 +148,7 @@ sub _render_error ($self, $err) {
         { errors => [{ message => "$err", path => '/' }] });
 }
 
-sub _to_data ($row) {
+sub _to_data ($row, $schema = undef) {
     my $data = { $row->get_columns };
     delete $data->{password};
 
@@ -135,6 +158,12 @@ sub _to_data ($row) {
         if (ref $val && eval { $val->isa('DateTime') }) {
             $data->{$key} = $val->iso8601;
         }
+    }
+
+    # Include many_to_many groups if available (resolved via prefetched data,
+    # Future->done returns instantly — no extra query).
+    if ($schema && $row->can('groups')) {
+        $data->{groupes} = $schema->await($row->groups);
     }
 
     return $data;
