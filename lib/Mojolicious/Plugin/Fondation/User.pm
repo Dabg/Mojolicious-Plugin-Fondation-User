@@ -14,7 +14,7 @@ sub fondation_meta {
             title  => 'User Management',
             models => {
                 user => {
-                    source  => 'users',
+                    source  => 'User',
                     backend => undef,  # must be set in app config
                 },
             },

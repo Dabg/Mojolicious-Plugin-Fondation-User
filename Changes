@@ -1,5 +1,8 @@
 Revision history for Mojolicious-Plugin-Fondation-User
 
+{{$NEXT}}
+    - replace table name with result_class name
+
 0.03    2025-04-25
     - Extracted Schema classes to Mojolicious::Plugin::Fondation::User::Schema::DBIx.
     - Extracted UI (templates, JS, i18n) to Mojolicious::Plugin::Fondation::User::UI.

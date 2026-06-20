@@ -11,6 +11,10 @@ use File::Temp qw(tempdir);
 
 my $tmpdir = tempdir(CLEANUP => 1);
 
+# Load schema class BEFORE Fondation so Action::DBIx can discover
+# and register plugin Result classes on it during startup.
+require TestUserSchema;
+
 # Build app with Fondation + DBIx::Async + User
 my $app = Mojolicious->new;
 $app->moniker('UserTest');
@@ -28,7 +32,7 @@ $app->config->{'Fondation'} = {
                     },
                 ],
                 models => {
-                    user => { source => 'users', backend => 'main' },
+                    user => { source => 'User', backend => 'main' },
                 },
             },
         },
@@ -37,16 +41,6 @@ $app->config->{'Fondation'} = {
 };
 
 $app->plugin('Fondation');
-
-# Action::DBIx auto-discovers Result classes under plugin namespaces,
-# but register_source() is silently skipped on the class in
-# DBIx::Class::Async::Schema v1.0.4 — known bug.
-# Workaround: register on the native schema class before workers fork.
-require TestUserSchema;
-require Mojolicious::Plugin::Fondation::User::Schema::Result::User;
-TestUserSchema->register_source('users',
-    Mojolicious::Plugin::Fondation::User::Schema::Result::User
-        ->result_source_instance);
 
 # Deploy the users table
 my $c = $app->build_controller;
