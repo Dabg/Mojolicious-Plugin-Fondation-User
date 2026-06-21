@@ -15,6 +15,12 @@ sub _want_groups ($self) {
     return exists $self->fondation->registry->{'Mojolicious::Plugin::Fondation::Group'};
 }
 
+# Check if Group plugin is loaded
+sub _has_group_plugin ($self) {
+    return 0 unless $self->has_helper('fondation');
+    return exists $self->fondation->registry->{'Mojolicious::Plugin::Fondation::Group'};
+}
+
 # ────────────────────────────────────────────────────────────────────────────
 # CRUD
 # ────────────────────────────────────────────────────────────────────────────
@@ -39,10 +45,16 @@ sub list ($self) {
 sub create ($self) {
     $self = $self->openapi->valid_input or return;
     $self->render_later;
-    my $json = $self->req->json;
+    my $json      = $self->req->json;
+    my $group_ids = delete $json->{groups};
     $self->model('user')->create($json)->on_done(sub {
         my $user = shift;
         my $data = _to_data($user);
+
+        # Sync group assignments (blocking in this worker — fast, no I/O wait)
+        $self->_sync_user_groups($data->{id}, $group_ids)
+            if $group_ids && @$group_ids && $self->_has_group_plugin;
+
         $self->res->headers->location($self->url_for('read_user', id => $data->{id}));
         $self->render(status => 201, openapi => $data);
 
@@ -103,6 +115,11 @@ sub update ($self) {
         $user->update($json)->on_done(sub {
             my $updated = shift;
             my $data    = _to_data($updated);
+
+            # Sync group assignments (blocking in this worker)
+            $self->_sync_user_groups($id, $group_ids)
+                if $group_ids && $self->_has_group_plugin;
+
             $self->render(openapi => $data);
 
             $self->notify_user({
@@ -139,6 +156,29 @@ sub delete ($self) {
 }
 
 # ────────────────────────────────────────────────────────────────────────────
+# Group assignment sync — internal helper
+# ────────────────────────────────────────────────────────────────────────────
+
+sub _sync_user_groups ($self, $user_id, $group_ids) {
+    my $schema = $self->schema;
+
+    # 1. Delete existing memberships
+    my $existing = $schema->await(
+        $self->model('user_group')->search({ user_id => $user_id })->all
+    );
+    if ($existing && @$existing) {
+        $schema->await(Future->needs_all(map { $_->delete } @$existing));
+    }
+
+    # 2. Create new memberships
+    return unless $group_ids && @$group_ids;
+    $schema->await(Future->needs_all(
+        map { $self->model('user_group')->create({ user_id => $user_id, group_id => $_ }) }
+            @$group_ids
+    ));
+}
+
+# ────────────────────────────────────────────────────────────────────────────
 # Private helpers
 # ────────────────────────────────────────────────────────────────────────────
 
@@ -163,7 +203,7 @@ sub _to_data ($row, $schema = undef) {
     # Include many_to_many groups if available (resolved via prefetched data,
     # Future->done returns instantly — no extra query).
     if ($schema && $row->can('groups')) {
-        $data->{groupes} = $schema->await($row->groups);
+        $data->{groups} = $schema->await($row->groups);
     }
 
     return $data;
