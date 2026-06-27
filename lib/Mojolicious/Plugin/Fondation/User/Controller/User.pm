@@ -25,6 +25,11 @@ sub _has_group_plugin ($self) {
 # CRUD
 # ────────────────────────────────────────────────────────────────────────────
 
+# Render the HTML page (no DB query — datatable loads via AJAX)
+sub index ($self) {
+    $self->render(template => 'user/list');
+}
+
 # List all users (GET /api/User)
 sub list ($self) {
     $self->render_later;
