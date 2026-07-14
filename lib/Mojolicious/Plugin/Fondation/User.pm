@@ -9,6 +9,7 @@ sub fondation_meta {
     return {
         dependencies => [
             'Fondation::Model::DBIx::Async',
+            'Fondation::MigrationDBIx',
             ],
         defaults => {
             title  => 'User Management',
