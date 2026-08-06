@@ -5,7 +5,7 @@ package Mojolicious::Plugin::Fondation::User::Schema::Result::User;
 use strict;
 use warnings;
 
-use base 'DBIx::Class::Core';
+use base 'Mojolicious::Plugin::Fondation::Schema::Result::Base';
 use Crypt::Passphrase;
 
 __PACKAGE__->load_components(qw/TimeStamp Core/);
@@ -89,8 +89,8 @@ __PACKAGE__->add_columns(
 );
 
 __PACKAGE__->set_primary_key('id');
-__PACKAGE__->add_unique_constraint([qw(username email)]);
 __PACKAGE__->resultset_class('Mojolicious::Plugin::Fondation::User::Schema::ResultSet::User');
+__PACKAGE__->add_unique_constraint([qw(username email)]);
 
 # Hash password automatically on create
 sub insert {
@@ -130,6 +130,15 @@ sub check_password {
     );
 
     return $pp->verify_password($password, $hash);
+}
+
+# ── TO_JSON — exclude password from serialization ──
+
+sub TO_JSON {
+    my $self = shift;
+    my $data = $self->SUPER::TO_JSON;
+    delete $data->{password};
+    return $data;
 }
 
 
