@@ -98,6 +98,25 @@ The C<password> field is never returned in API responses.
   $c->model('user')->created_today;    # users created today
   $c->model('user')->latest;           # latest 10 users
 
+=head3 with() — many_to_many prefetch
+
+  # Include groups in list/read responses (requires Fondation::Group)
+  GET /api/User?with=groups
+
+  # Or programmatically:
+  $c->model('user')->with('groups')->TO_JSON->then(sub ($data) {
+      $self->render(openapi => $data);
+  });
+
+C<with('groups')> triggers a single-query prefetch via the
+C<user_group> pivot table.  Each user row includes a C<groups>
+arrayref with the full group objects — no extra DB round-trips.
+The automatic C<TO_JSON> serialization (inherited from
+L<Mojolicious::Plugin::Fondation::Schema::Result::Base>) includes
+the groups when the data is available.
+
+Without C<with()>, m2m relationships are silently excluded.
+
 =head2 Translations
 
 Translations for API notifications are shipped in C<share/translations/>.
