@@ -1,6 +1,8 @@
 Revision history for Mojolicious-Plugin-Fondation-User
 
 {{$NEXT}}
+
+0.03      2026-08-06 23:40:06+02:00 Europe/Paris
   - update doc with many
   - use Mojolicious::Plugin::Fondation::Schema::Result::Base
   - drop _render_error/_has_group_plugin, simplify _want_groups
